@@ -7,8 +7,8 @@ services:
     restart: always
     networks:
       - bot-network
-    env_file:
-      - ".env"
+    # env_file:
+    #   - ".env"
     ports:
       - "${DB_POSTGRES_PORT}:5432"
     # volumes:
@@ -25,8 +25,8 @@ services:
     ports:
       - '8000:8000'
     restart: always
-    env_file:
-      - ".env"
+    # env_file:
+    #   - ".env"
     # volumes:
     #   - .:/project
     init: true
@@ -43,8 +43,8 @@ services:
     image: redis:7-alpine
     networks:
       - bot-network
-    env_file:
-      - ".env"
+    # env_file:
+    #   - ".env"
     restart: always
     # volumes:
     #   - bot-redis-data:/data
