@@ -11,8 +11,8 @@ services:
       - ".env"
     ports:
       - "${DB_POSTGRES_PORT}:5432"
-    volumes:
-      - postgress-data:/var/lib/postgresql/data
+    # volumes:
+    #   - postgress-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
 
@@ -27,8 +27,8 @@ services:
     restart: always
     env_file:
       - ".env"
-    volumes:
-      - .:/project
+    # volumes:
+    #   - .:/project
     init: true
     depends_on:
       postgres_db:
@@ -46,8 +46,8 @@ services:
     env_file:
       - ".env"
     restart: always
-    volumes:
-      - bot-redis-data:/data
+    # volumes:
+    #   - bot-redis-data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -61,8 +61,8 @@ networks:
     name: bot-network
     driver: bridge
 
-volumes:
-  postgress-data:
-    driver: local
-  bot-redis-data:
-    driver: local
+# volumes:
+#   postgress-data:
+#     driver: local
+#   bot-redis-data:
+#     driver: local
