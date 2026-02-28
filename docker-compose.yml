@@ -1,0 +1,68 @@
+version: '3.9'
+services:
+
+  postgres_db:
+    image: postgres:11
+    container_name: postgres_db
+    restart: always
+    networks:
+      - bot-network
+    env_file:
+      - ".env"
+    ports:
+      - "${DB_POSTGRES_PORT}:5432"
+    volumes:
+      - postgress-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - bot-network
+    ports:
+      - '8000:8000'
+    restart: always
+    env_file:
+      - ".env"
+    volumes:
+      - .:/project
+    init: true
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    networks:
+      - bot-network
+    env_file:
+      - ".env"
+    restart: always
+    volumes:
+      - bot-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - '${REDIS_PORT}:${REDIS_PORT}'
+
+networks:
+  bot-network:
+    name: bot-network
+    driver: bridge
+
+volumes:
+  postgress-data:
+    driver: local
+  bot-redis-data:
+    driver: local

@@ -1,0 +1,5 @@
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+* * * * * . /etc/cron.env && cd /app && /app/.venv/bin/python -m bot.scheduler.send_notifications_cron_script >> /var/log/cron.log 2>&1
+0 0 * * * . /etc/cron.env && cd /app && /app/.venv/bin/python -m bot.scheduler.schedule_notifications_cron_script >> /var/log/cron.log 2>&1
