@@ -2,7 +2,6 @@ services:
 
   postgres_db:
     image: postgres:11
-    container_name: postgres_db
     restart: always
     networks:
       - bot-network
@@ -42,7 +41,6 @@ services:
     tty: true
 
   redis:
-    container_name: redis
     image: redis:7-alpine
     networks:
       - bot-network
