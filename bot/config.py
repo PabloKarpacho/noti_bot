@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Environment Configuration
     env: str = Field(default="dev", description="Environment (local, dev, prod)")
     # PostgreSQL Configuration
-    db_postgres_url: str = Field(default="", description="PostgreSQL connection URL")
+    db_postgres_url: str = Field(default=os.getenv("DB_POSTGRES_URL", ""), description="PostgreSQL connection URL")
     postgres_user: str = Field(default="noti_bot", description="PostgreSQL username")
     postgres_password: str = Field(
         default="noti_bot_password", description="PostgreSQL password"
