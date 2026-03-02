@@ -4,7 +4,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 from bot.common.utills import auth_user
+from bot.common.logging import get_logger
 from bot.enums.stickers import StickersEnum
+
+logger = get_logger()
 
 router = Router()
 
@@ -14,6 +17,7 @@ async def handle_start(
     message: Message,
     state: FSMContext,
 ) -> None:
+    logger.info("Received /start from user_tg_id={}", message.from_user.id)
 
     await state.clear()
 
@@ -26,6 +30,7 @@ async def handle_start(
     )
 
     if user:
+        logger.info("Authorized user_tg_id={}, sending welcome", tg_id)
 
         await message.answer_sticker(
             sticker=StickersEnum.KIND_RABBIT,

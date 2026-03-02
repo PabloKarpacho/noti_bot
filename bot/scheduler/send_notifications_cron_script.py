@@ -1,5 +1,4 @@
 import asyncio
-from loguru import logger
 import random
 
 from datetime import datetime, timedelta
@@ -9,17 +8,23 @@ from aiogram.exceptions import TelegramBadRequest
 
 
 from bot.web.app import get_bot
+from bot.common.logging import setup_logging, get_logger
 from bot.config import settings
 from bot.postgres.crud import get_pending_notifications
 from bot.postgres.schema import NotificationTemplate
 from bot.keyboards.new_notification import mark_notification_as_done_kb
 from bot.enums.stickers import StickersEnum
 
+logger = get_logger()
+
 bot = get_bot(token=settings.bot_client_token)
 
 
 def should_send_notification(notification_template: NotificationTemplate) -> bool:
-    logger.info(f"Checking if we should send notification")
+    logger.debug(
+        "Checking notification template {}",
+        notification_template.notification_template_id,
+    )
     tz = ZoneInfo(notification_template.user.timezone)
     interval = notification_template.sending_interval_minutes
 
@@ -54,8 +59,10 @@ def should_send_notification(notification_template: NotificationTemplate) -> boo
 
     check_result = minutes_from_start % interval == 0
 
-    logger.info(
-        f"Check result for notification {notification_template.notification_template_id}: {check_result}"
+    logger.debug(
+        "Check result for template {}: {}",
+        notification_template.notification_template_id,
+        check_result,
     )
 
     return check_result
@@ -64,6 +71,7 @@ def should_send_notification(notification_template: NotificationTemplate) -> boo
 async def send_notifications():
 
     pending_notifications = await get_pending_notifications()
+    logger.info("Pending notifications to process: {}", len(pending_notifications))
 
     for notification in pending_notifications:
 
@@ -73,7 +81,9 @@ async def send_notifications():
             if should_send_notification(notification_teamplate):
 
                 logger.info(
-                    f"Sending notification {notification.notification_id} to user {notification_teamplate.user.user_tg_id}"
+                    "Sending notification {} to user {}",
+                    notification.notification_id,
+                    notification_teamplate.user.user_tg_id,
                 )
 
                 await bot.send_sticker(
@@ -90,12 +100,23 @@ async def send_notifications():
                 )
         except TelegramBadRequest as e:
             logger.error(
-                f"Failed to send notification {notification.notification_id} to user {notification_teamplate.user.user_tg_id}: {e}"
+                "Failed to send notification {} to user {}: {}",
+                notification.notification_id,
+                notification_teamplate.user.user_tg_id,
+                e,
+            )
+        except Exception:
+            logger.exception(
+                "Unexpected error while sending notification {}",
+                notification.notification_id,
             )
 
 
 async def main():
+    setup_logging(level=settings.log_level)
+    logger.info("Start send notifications cron script")
     await send_notifications()
+    logger.info("Send notifications cron script finished")
 
 
 if __name__ == "__main__":

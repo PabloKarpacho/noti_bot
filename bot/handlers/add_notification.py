@@ -7,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from bot.common.utills import auth_user, tz_from_coords
+from bot.common.logging import get_logger
 from bot.enums.stickers import StickersEnum
 from bot.states.notifications import NotificationFSM
 from bot.keyboards.new_notification import (
@@ -28,6 +29,7 @@ from bot.postgres.crud import (
 from bot.scheduler.schedule_notifications_cron_script import _schedule_notifications
 
 router = Router()
+logger = get_logger()
 
 
 @router.message(Command(commands=["new_notification"]))
@@ -35,6 +37,7 @@ async def handle_new_notification(
     message: Message,
     state: FSMContext,
 ) -> None:
+    logger.info("Received /new_notification from user_tg_id={}", message.from_user.id)
 
     await state.clear()
 
@@ -63,6 +66,7 @@ async def handle_create_notification_name(
     message: Message,
     state: FSMContext,
 ) -> None:
+    logger.debug("Received notification name from user_tg_id={}", message.from_user.id)
 
     await state.clear()
 
@@ -95,6 +99,9 @@ async def handle_create_notification_message(
     message: Message,
     state: FSMContext,
 ) -> None:
+    logger.debug(
+        "Received notification message from user_tg_id={}", message.from_user.id
+    )
 
     data = await state.get_data()
 
@@ -134,6 +141,12 @@ async def handle_create_notification_start_time(
     state: FSMContext,
     callback_data: SelectedTime,
 ) -> None:
+    logger.debug(
+        "Received start time callback from user_tg_id={} time={:02d}:{:02d}",
+        callback_query.from_user.id,
+        callback_data.hour,
+        callback_data.minute,
+    )
 
     await callback_query.answer()
 
@@ -186,6 +199,12 @@ async def handle_create_notification_end_time(
     state: FSMContext,
     callback_data: SelectedTime,
 ) -> None:
+    logger.debug(
+        "Received end time callback from user_tg_id={} time={:02d}:{:02d}",
+        callback_query.from_user.id,
+        callback_data.hour,
+        callback_data.minute,
+    )
     await callback_query.answer()
 
     data = await state.get_data()
@@ -239,6 +258,11 @@ async def handle_create_notification_sending_interval_minutes(
     state: FSMContext,
     callback_data: SelectedSendingInterval,
 ) -> None:
+    logger.debug(
+        "Received interval callback from user_tg_id={} minutes={}",
+        callback_query.from_user.id,
+        callback_data.minutes,
+    )
 
     await callback_query.answer()
 
@@ -261,6 +285,7 @@ async def handle_create_notification_sending_interval_minutes(
         await callback_query.message.answer(f"⏰ You chose: {chosen}")
 
         if user.timezone is None:
+            logger.info("User {} has no timezone, requesting location", user.user_id)
 
             await callback_query.message.answer(
                 text=(
@@ -308,6 +333,7 @@ async def handle_create_notification_sending_interval_minutes(
 async def handle_save_notification(
     callback_query: CallbackQuery, state: FSMContext, callback_data: SaveNotification
 ):
+    logger.info("Saving notification for user_tg_id={}", callback_query.from_user.id)
     await callback_query.answer()
 
     data = await state.get_data()
@@ -342,6 +368,11 @@ async def handle_save_notification(
             sending_interval_minutes=data.get("notification_sending_interval_minutes"),
             time_stop=time_end,
         )
+        logger.info(
+            "Notification template {} created for user_id={}",
+            notification_template.notification_template_id,
+            user.user_id,
+        )
 
         await _schedule_notifications([notification_template])
 
@@ -356,6 +387,7 @@ async def handle_save_notification(
 
 @router.message(F.location)
 async def handle_update_or_create_location(message: Message, state: FSMContext):
+    logger.info("Received location from user_tg_id={}", message.from_user.id)
 
     tg_id = str(message.from_user.id)
 
@@ -373,6 +405,7 @@ async def handle_update_or_create_location(message: Message, state: FSMContext):
         )
 
         if not tz:
+            logger.warning("Failed to detect timezone for user_tg_id={}", tg_id)
             await message.answer(
                 text=(
                     "⚠️ <b>Couldn't detect your timezone.</b>\n\n"
@@ -383,6 +416,7 @@ async def handle_update_or_create_location(message: Message, state: FSMContext):
             return
 
         await update_user(user_id=user.user_id, timezone=tz)
+        logger.info("Updated timezone for user_id={} tz={}", user.user_id, tz)
 
         if user.timezone is not None:
             await message.answer(
@@ -411,6 +445,11 @@ async def handle_mark_done(callback_query: CallbackQuery, callback_data: MarkDon
     await callback_query.answer()
     if callback_data.is_done:
         notification_id = callback_data.notification_id
+        logger.info(
+            "Marking notification as done notification_id={} user_tg_id={}",
+            notification_id,
+            callback_query.from_user.id,
+        )
 
         await update_notification(notification_id=notification_id, marked_as_done=True)
         await callback_query.message.edit_text("Good job! ✅")

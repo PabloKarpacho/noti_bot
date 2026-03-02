@@ -7,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from bot.common.utills import auth_user, tz_from_coords
+from bot.common.logging import get_logger
 from bot.enums.stickers import StickersEnum
 from bot.states.notifications import NotificationFSM
 from bot.keyboards.new_notification import (
@@ -27,6 +28,7 @@ from bot.keyboards.delete_notification import (
 )
 
 router = Router()
+logger = get_logger()
 
 
 @router.message(Command(commands=["delete_notification"]))
@@ -34,6 +36,9 @@ async def handle_delete_notification(
     message: Message,
     state: FSMContext,
 ) -> None:
+    logger.info(
+        "Received /delete_notification from user_tg_id={}", message.from_user.id
+    )
 
     await state.clear()
 
@@ -52,6 +57,7 @@ async def handle_delete_notification(
         )
 
         if not notification_templates:
+            logger.info("No templates to delete for user_id={}", user.user_id)
             await message.answer(
                 text=(
                     "🤔 <b>Nothing to delete yet!</b>\n\n"
@@ -68,6 +74,11 @@ async def handle_delete_notification(
             parse_mode="HTML",
             reply_markup=delete_notification_kb(notification_templates),
         )
+        logger.info(
+            "Sent delete keyboard with {} templates to user_id={}",
+            len(notification_templates),
+            user.user_id,
+        )
 
 
 @router.callback_query(NotificationTemplateCallback.filter())
@@ -76,6 +87,11 @@ async def handle_delete_notification(
     callback_data: NotificationTemplateCallback,
     state: FSMContext,
 ) -> None:
+    logger.info(
+        "Received delete callback from user_tg_id={} template_id={}",
+        callback_query.from_user.id,
+        callback_data.template_id,
+    )
 
     await callback_query.answer()
 
@@ -94,6 +110,9 @@ async def handle_delete_notification(
         template_id = callback_data.template_id
 
         await delete_notification_template(notification_id=template_id)
+        logger.info(
+            "Deleted notification template {} for user_id={}", template_id, user.user_id
+        )
         await callback_query.message.edit_text(
             text="🗑️ Notification deleted!",
             parse_mode="HTML",

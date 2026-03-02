@@ -6,19 +6,25 @@ from sqlalchemy import delete, select, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import SQLAlchemyError
 
+from bot.common.logging import get_logger
 from bot.postgres.db import get_db
 from bot.postgres.schema import Notification, NotificationTemplate, User
+
+logger = get_logger()
 
 
 async def create_user(user_tg_id: str) -> User:
     async with get_db() as session:
         try:
+            logger.info("Creating user with tg_id={}", user_tg_id)
             user = User(user_tg_id=user_tg_id)
             session.add(user)
             await session.commit()
             await session.refresh(user)
+            logger.info("User created: user_id={}", user.user_id)
             return user
         except SQLAlchemyError:
+            logger.exception("Failed to create user with tg_id={}", user_tg_id)
             await session.rollback()
             raise
 
@@ -31,6 +37,7 @@ async def get_user_by_id(user_id: str) -> User | None:
 
 async def get_user_by_tg_id(user_tg_id: str) -> User | None:
     async with get_db() as session:
+        logger.debug("Fetching user by tg_id={}", user_tg_id)
         result = await session.execute(
             select(User).where(User.user_tg_id == user_tg_id)
         )
@@ -50,9 +57,11 @@ async def update_user(
 ) -> User | None:
     async with get_db() as session:
         try:
+            logger.info("Updating user {}", user_id)
             result = await session.execute(select(User).where(User.user_id == user_id))
             user = result.scalar_one_or_none()
             if user is None:
+                logger.warning("User not found for update: {}", user_id)
                 return None
 
             if user_tg_id is not None:
@@ -62,8 +71,10 @@ async def update_user(
 
             await session.commit()
             await session.refresh(user)
+            logger.info("User updated: {}", user_id)
             return user
         except SQLAlchemyError:
+            logger.exception("Failed to update user {}", user_id)
             await session.rollback()
             raise
 
@@ -71,10 +82,12 @@ async def update_user(
 async def delete_user(user_id: str) -> bool:
     async with get_db() as session:
         try:
+            logger.info("Deleting user {}", user_id)
             result = await session.execute(delete(User).where(User.user_id == user_id))
             await session.commit()
             return (result.rowcount or 0) > 0
         except SQLAlchemyError:
+            logger.exception("Failed to delete user {}", user_id)
             await session.rollback()
             raise
 
@@ -89,6 +102,9 @@ async def create_notification_template(
 ) -> NotificationTemplate:
     async with get_db() as session:
         try:
+            logger.info(
+                "Creating notification template for user_id={} name={}", user_id, name
+            )
             template = NotificationTemplate(
                 user_id=user_id,
                 name=name,
@@ -100,8 +116,18 @@ async def create_notification_template(
             session.add(template)
             await session.commit()
             await session.refresh(template)
+            logger.info(
+                "Notification template created: template_id={} user_id={}",
+                template.notification_template_id,
+                user_id,
+            )
             return template
         except SQLAlchemyError:
+            logger.exception(
+                "Failed to create notification template for user_id={} name={}",
+                user_id,
+                name,
+            )
             await session.rollback()
             raise
 
@@ -120,6 +146,7 @@ async def get_notification_template_by_id(
 
 async def get_notification_templates() -> list[NotificationTemplate]:
     async with get_db() as session:
+        logger.debug("Fetching all notification templates")
         result = await session.execute(select(NotificationTemplate))
         return list(result.scalars().all())
 
@@ -148,6 +175,7 @@ async def update_notification_template(
 ) -> NotificationTemplate | None:
     async with get_db() as session:
         try:
+            logger.info("Updating notification template {}", notification_id)
             result = await session.execute(
                 select(NotificationTemplate).where(
                     NotificationTemplate.notification_id == notification_id
@@ -155,6 +183,9 @@ async def update_notification_template(
             )
             template = result.scalar_one_or_none()
             if template is None:
+                logger.warning(
+                    "Notification template not found for update: {}", notification_id
+                )
                 return None
 
             if message is not None:
@@ -168,8 +199,12 @@ async def update_notification_template(
 
             await session.commit()
             await session.refresh(template)
+            logger.info("Notification template updated: {}", notification_id)
             return template
         except SQLAlchemyError:
+            logger.exception(
+                "Failed to update notification template {}", notification_id
+            )
             await session.rollback()
             raise
 
@@ -177,6 +212,7 @@ async def update_notification_template(
 async def delete_notification_template(notification_id: int) -> bool:
     async with get_db() as session:
         try:
+            logger.info("Deleting notification template {}", notification_id)
             result = await session.execute(
                 delete(NotificationTemplate).where(
                     NotificationTemplate.notification_template_id == notification_id
@@ -185,6 +221,9 @@ async def delete_notification_template(notification_id: int) -> bool:
             await session.commit()
             return (result.rowcount or 0) > 0
         except SQLAlchemyError:
+            logger.exception(
+                "Failed to delete notification template {}", notification_id
+            )
             await session.rollback()
             raise
 
@@ -195,6 +234,7 @@ async def create_notification(
 ) -> Notification:
     async with get_db() as session:
         try:
+            logger.debug("Creating notification for template_id={}", template_id)
             notification = Notification(
                 template_id=template_id,
                 marked_as_done=marked_as_done,
@@ -202,8 +242,12 @@ async def create_notification(
             session.add(notification)
             await session.commit()
             await session.refresh(notification)
+            logger.debug("Notification created: {}", notification.notification_id)
             return notification
         except SQLAlchemyError:
+            logger.exception(
+                "Failed to create notification for template_id={}", template_id
+            )
             await session.rollback()
             raise
 
@@ -236,6 +280,7 @@ async def get_pending_notifications() -> list[Notification]:
     end = start + timedelta(days=1)
 
     async with get_db() as session:
+        logger.debug("Fetching pending notifications for current UTC day")
         result = await session.execute(
             select(Notification)
             .options(
@@ -251,7 +296,9 @@ async def get_pending_notifications() -> list[Notification]:
                 )
             )
         )
-        return list(result.scalars().all())
+        notifications = list(result.scalars().all())
+        logger.info("Fetched {} pending notifications", len(notifications))
+        return notifications
 
 
 async def update_notification(
@@ -261,6 +308,7 @@ async def update_notification(
 ) -> Notification | None:
     async with get_db() as session:
         try:
+            logger.info("Updating notification {}", notification_id)
             result = await session.execute(
                 select(Notification).where(
                     Notification.notification_id == notification_id
@@ -268,6 +316,7 @@ async def update_notification(
             )
             notification = result.scalar_one_or_none()
             if notification is None:
+                logger.warning("Notification not found for update: {}", notification_id)
                 return None
 
             if template_id is not None:
@@ -277,8 +326,10 @@ async def update_notification(
 
             await session.commit()
             await session.refresh(notification)
+            logger.info("Notification updated: {}", notification_id)
             return notification
         except SQLAlchemyError:
+            logger.exception("Failed to update notification {}", notification_id)
             await session.rollback()
             raise
 
@@ -293,6 +344,7 @@ async def mark_notification_as_done(notification_id: str) -> Notification | None
 async def delete_notification(notification_id: str) -> bool:
     async with get_db() as session:
         try:
+            logger.info("Deleting notification {}", notification_id)
             result = await session.execute(
                 delete(Notification).where(
                     Notification.notification_id == notification_id
@@ -301,5 +353,6 @@ async def delete_notification(notification_id: str) -> bool:
             await session.commit()
             return (result.rowcount or 0) > 0
         except SQLAlchemyError:
+            logger.exception("Failed to delete notification {}", notification_id)
             await session.rollback()
             raise

@@ -5,8 +5,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 
-from bot.config import settings
+from bot.common.logging import get_logger
 from bot.postgres.crud import create_user, get_user_by_tg_id
+
+logger = get_logger()
 
 router = Router()
 
@@ -17,6 +19,9 @@ async def handle_register(
     bot: Bot,
     state: FSMContext,
 ) -> None:
+    logger.info(
+        "Received contact for registration from user_tg_id={}", message.from_user.id
+    )
 
     await state.clear()
 
@@ -24,6 +29,7 @@ async def handle_register(
 
     user = await get_user_by_tg_id(user_tg_id=tg_id)
     if not user:
+        logger.info("User not found, creating new user with tg_id={}", tg_id)
 
         await create_user(user_tg_id=tg_id)
 
@@ -36,3 +42,5 @@ async def handle_register(
             ),
             parse_mode="HTML",
         )
+    else:
+        logger.debug("User already registered: tg_id={}", tg_id)

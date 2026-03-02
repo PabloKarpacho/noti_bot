@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     )
 
     bot_client_token: str = Field(default="", description="Telegram bot client token")
+    log_level: str = Field(default="INFO", description="Application log level")
     # Redis Configuration
     redis_host: str = Field(default="localhost", description="Redis host address")
     redis_port: int = Field(default=6379, description="Redis port number")
