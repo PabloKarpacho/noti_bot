@@ -25,7 +25,7 @@ class TimePage(CallbackData, prefix="time_page"):  # type: ignore[call-arg]
 
 class MarkDone(CallbackData, prefix="mark_done"):  # type: ignore[call-arg]
     is_done: bool
-    notification_id: str
+    notification_id: int
 
 
 class SaveNotification(CallbackData, prefix="save_notification"):  # type: ignore[call-arg]
@@ -122,7 +122,7 @@ def sending_interval_page_kb(
     return kb.as_markup()
 
 
-def mark_notification_as_done_kb(notification_id: str):
+def mark_notification_as_done_kb(notification_id: int):
     kb = InlineKeyboardBuilder()
     kb.button(
         text="✅",
