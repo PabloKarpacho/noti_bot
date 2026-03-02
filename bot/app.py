@@ -18,7 +18,6 @@ def get_dispatcher(redis_host: str, redis_port: str) -> Dispatcher:
 
     """
 
-
     storage = RedisStorage.from_url(f"redis://{redis_host}:{redis_port}")
 
     return Dispatcher(storage=storage)

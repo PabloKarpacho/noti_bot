@@ -26,7 +26,6 @@ from bot.keyboards.delete_notification import (
     delete_notification_kb,
 )
 
-
 router = Router()
 
 

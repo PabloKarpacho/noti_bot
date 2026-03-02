@@ -238,7 +238,11 @@ async def get_pending_notifications() -> list[Notification]:
     async with get_db() as session:
         result = await session.execute(
             select(Notification)
-            .options(selectinload(Notification.template).selectinload(NotificationTemplate.user))
+            .options(
+                selectinload(Notification.template).selectinload(
+                    NotificationTemplate.user
+                )
+            )
             .where(
                 and_(
                     Notification.marked_as_done.is_(False),

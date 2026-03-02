@@ -25,9 +25,7 @@ class User(Base):
         index=True,
     )
 
-    timezone: Mapped[str] = mapped_column(
-        String(50), nullable=True
-    )
+    timezone: Mapped[str] = mapped_column(String(50), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),

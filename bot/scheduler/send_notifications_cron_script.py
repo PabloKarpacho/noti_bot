@@ -84,7 +84,9 @@ async def send_notifications():
                 await bot.send_message(
                     chat_id=notification_teamplate.user.user_tg_id,
                     text=notification_teamplate.message,
-                    reply_markup=mark_notification_as_done_kb(notification.notification_id),
+                    reply_markup=mark_notification_as_done_kb(
+                        notification.notification_id
+                    ),
                 )
         except TelegramBadRequest as e:
             logger.error(

@@ -6,7 +6,6 @@ from bot.postgres.schema import NotificationTemplate
 from bot.postgres.crud import get_notification_templates, create_notification
 
 
-
 async def _get_notification_templates() -> List[NotificationTemplate]:
 
     notification_templates = await get_notification_templates()

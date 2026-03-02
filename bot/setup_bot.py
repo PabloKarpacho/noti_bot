@@ -14,8 +14,12 @@ async def set_commands(bot: Bot) -> None:
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Start from this"),
-            BotCommand(command="new_notification", description="Create new notification"),
-            BotCommand(command="delete_notification", description="Delete notification"),
+            BotCommand(
+                command="new_notification", description="Create new notification"
+            ),
+            BotCommand(
+                command="delete_notification", description="Delete notification"
+            ),
         ]
     )
 
