@@ -40,12 +40,11 @@ def should_send_notification(notification_template: NotificationTemplate) -> boo
         today, notification_template.time_start, tzinfo=tz
     ).replace(second=0, microsecond=0)
 
-    # Если time_stop не задан — верхней границы окна нет.
-    # Для сохранения «сетки» интервала берём ближайший прошедший start_dt
-    # (сегодня или вчера), чтобы отправка продолжалась через полночь.
+    # Если time_stop не задан — верхней границы окна нет,
+    # но до наступления time_start не отправляем.
     if notification_template.time_stop is None:
         if now_dt < start_dt:
-            start_dt -= timedelta(days=1)
+            return False
 
         minutes_from_start = int((now_dt - start_dt).total_seconds() // 60)
         check_result = minutes_from_start % interval == 0
