@@ -98,7 +98,7 @@ async def create_notification_template(
     message: str,
     time_start: time,
     sending_interval_minutes: int,
-    time_stop: time,
+    time_stop: time | None = None,
 ) -> NotificationTemplate:
     async with get_db() as session:
         try:

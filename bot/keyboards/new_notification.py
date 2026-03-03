@@ -11,8 +11,8 @@ class SelectedTime(
 
 
 class SelectedTime(CallbackData, prefix="time_callback"):  # type: ignore[call-arg]
-    hour: int
-    minute: int
+    hour: int | None
+    minute: int | None
 
 
 class SelectedSendingInterval(CallbackData, prefix="sending_interval_callback"):  # type: ignore[call-arg]
@@ -49,16 +49,26 @@ def time_page_kb(
     start_h: int = 0,
     start_m: int = 0,
     end_h: int = 23,
+    time_type: str = "time_start",
 ):
     times = build_times(
         step_min=step_min, start_h=start_h, start_m=start_m, end_h=end_h
     )
     total_pages = (len(times) + per_page - 1) // per_page
+
+    kb = InlineKeyboardBuilder()
+
+    if time_type == "time_end":
+        kb.button(
+            text="▶️ Send Nonstop",
+            callback_data=SelectedTime(hour=None, minute=None).pack(),
+        )
+
+        total_pages += 1  # Добавляем страницу для "Send Nonstop"
+
     page = max(0, min(page, total_pages - 1))
 
     chunk = times[page * per_page : (page + 1) * per_page]
-
-    kb = InlineKeyboardBuilder()
 
     # Кнопки времени
     for h, m in chunk:

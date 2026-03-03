@@ -181,6 +181,7 @@ async def handle_create_notification_start_time(
                 start_h=callback_data.hour,
                 start_m=callback_data.minute,
                 end_h=23,
+                time_type="time_end",
             ),
         )
         await state.set_state(NotificationFSM.create_end_time)
@@ -355,10 +356,13 @@ async def handle_save_notification(
             minute=data.get("notification_start_time_minute"),
         )
 
-        time_end = time(
-            hour=data.get("notification_end_time_hour"),
-            minute=data.get("notification_end_time_minute"),
-        )
+        if data.get("notification_end_time_hour") is None or data.get("notification_end_time_minute") is None:
+            time_end = None
+        else:
+            time_end = time(
+                hour=data.get("notification_end_time_hour"),
+                minute=data.get("notification_end_time_minute"),
+            )
 
         notification_template = await create_notification_template(
             user_id=user.user_id,

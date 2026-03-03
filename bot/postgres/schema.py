@@ -70,7 +70,7 @@ class NotificationTemplate(Base):
 
     time_stop: Mapped[time] = mapped_column(
         Time(timezone=False),
-        nullable=False,
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
