@@ -164,7 +164,7 @@ async def handle_create_notification_start_time(
 
     if user:
 
-        chosen = f"{callback_data.hour:02d}:{callback_data.minute:02d}"
+        chosen = f"{callback_data.hour}:{callback_data.minute}"
 
         await callback_query.message.answer(f"⏰ You chose: {chosen}")
 
@@ -222,7 +222,7 @@ async def handle_create_notification_end_time(
 
     if user:
 
-        chosen = f"{callback_data.hour:02d}:{callback_data.minute:02d}"
+        chosen = f"{callback_data.hour}:{callback_data.minute}"
 
         await callback_query.message.answer(f"⏰ You chose: {chosen}")
 
