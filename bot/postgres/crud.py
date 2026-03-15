@@ -305,6 +305,8 @@ async def update_notification(
     notification_id: str,
     template_id: str | None = None,
     marked_as_done: bool | None = None,
+    sticker_sent: bool | None = None,
+    last_bot_message_id: int | None = None,
 ) -> Notification | None:
     async with get_db() as session:
         try:
@@ -323,7 +325,10 @@ async def update_notification(
                 notification.template_id = template_id
             if marked_as_done is not None:
                 notification.marked_as_done = marked_as_done
-
+            if sticker_sent is not None:
+                notification.sticker_sent = sticker_sent
+            if last_bot_message_id is not None:
+                notification.last_bot_message_id = last_bot_message_id
             await session.commit()
             await session.refresh(notification)
             logger.info("Notification updated: {}", notification_id)

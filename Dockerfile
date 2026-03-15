@@ -17,6 +17,9 @@ RUN pip install --no-cache-dir uv \
 
 # код — в /app/bot
 COPY bot/ ./bot/
+COPY alembic.ini ./alembic.ini
+COPY alembic/ ./alembic/
+COPY scripts/ ./scripts/
 
 # cron jobs
 COPY bot/scheduler/crontab /etc/cron.d/bot-cron
@@ -25,7 +28,7 @@ RUN chmod 0644 /etc/cron.d/bot-cron \
   && touch /var/log/cron.log
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN chmod +x /entrypoint.sh /app/scripts/manage_migrations.sh
 
 ENV PYTHONUNBUFFERED=1
 

@@ -4,6 +4,9 @@ set -e
 # сохраняем текущее окружение контейнера в файл для cron
 printenv | sed 's/^\([^=]*\)=\(.*\)$/export \1="\2"/' > /etc/cron.env
 
+echo "Applying database migrations"
+/app/scripts/manage_migrations.sh deploy-upgrade
+
 cron
 tail -F /var/log/cron.log &
 

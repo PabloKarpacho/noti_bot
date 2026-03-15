@@ -10,7 +10,7 @@ from aiogram.exceptions import TelegramBadRequest
 from bot.web.app import get_bot
 from bot.common.logging import setup_logging, get_logger
 from bot.config import settings
-from bot.postgres.crud import get_pending_notifications
+from bot.postgres.crud import get_pending_notifications, update_notification
 from bot.postgres.schema import NotificationTemplate
 from bot.keyboards.new_notification import mark_notification_as_done_kb
 from bot.enums.stickers import StickersEnum
@@ -104,17 +104,39 @@ async def send_notifications():
                     notification_teamplate.user.user_tg_id,
                 )
 
-                await bot.send_sticker(
-                    chat_id=notification_teamplate.user.user_tg_id,
-                    sticker=random.choice(StickersEnum.reminders_reply_list),
-                )
+                if not notification.sticker_sent:
+                    await bot.send_sticker(
+                        chat_id=notification_teamplate.user.user_tg_id,
+                        sticker=random.choice(StickersEnum.reminders_reply_list),
+                    )
+                    await update_notification(
+                        notification_id=notification.notification_id, sticker_sent=True
+                    )
 
-                await bot.send_message(
+                if notification.last_bot_message_id is not None:
+                    try:
+                        await bot.edit_message_reply_markup(
+                            chat_id=notification_teamplate.user.user_tg_id,
+                            message_id=notification.last_bot_message_id,
+                            reply_markup=None,
+                        )
+                    except TelegramBadRequest as e:
+                        logger.error(
+                            "Failed to edit message reply markup for notification {}: {}",
+                            notification.notification_id,
+                            e,
+                        )
+
+                message = await bot.send_message(
                     chat_id=notification_teamplate.user.user_tg_id,
                     text=notification_teamplate.message,
                     reply_markup=mark_notification_as_done_kb(
                         notification.notification_id
                     ),
+                )
+                await update_notification(
+                    notification_id=notification.notification_id,
+                    last_bot_message_id=message.message_id,
                 )
         except TelegramBadRequest as e:
             logger.error(

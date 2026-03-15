@@ -110,6 +110,15 @@ class Notification(Base):
         nullable=False,
         default=False,
     )
+    sticker_sent: Mapped[bool] = mapped_column(
+        nullable=False,
+        default=False,
+    )
+    last_bot_message_id: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+    )
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         server_default=func.now(),
