@@ -10,9 +10,7 @@ from datetime import datetime
 
 
 from bot.postgres.schema import User
-from bot.keyboards.share_contact import build_share_contact_markup
-from bot.states.register import RegisterFSM
-from bot.postgres.crud import get_user_by_tg_id
+from bot.postgres.crud import create_user, get_user_by_tg_id
 
 
 async def auth_user(
@@ -31,13 +29,8 @@ async def auth_user(
     user = await get_user_by_tg_id(user_tg_id=tg_id)
 
     if not user:
-        await state.set_state(RegisterFSM.share_contact)
-
-        await message.answer(  # type: ignore[union-attr]
-            text="Click the 'Share Contact' button\n" "to log in 👇",
-            reply_markup=build_share_contact_markup(),
-        )
-        return None
+        await state.clear()
+        user = await create_user(user_tg_id=tg_id)
 
     return user
 
