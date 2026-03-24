@@ -8,12 +8,12 @@ from bot.common.logging import get_logger
 
 logger = get_logger()
 
-db_semaphore = asyncio.Semaphore(150)
+db_semaphore = asyncio.Semaphore(20)
 
 async_engine = create_async_engine(
     settings.db_postgres_url,
-    pool_size=50,
-    max_overflow=100,
+    pool_size=5,
+    max_overflow=10,
     pool_timeout=120,
     pool_recycle=1800,
     pool_pre_ping=True,

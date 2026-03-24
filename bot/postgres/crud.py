@@ -151,6 +151,20 @@ async def get_notification_templates() -> list[NotificationTemplate]:
         return list(result.scalars().all())
 
 
+async def get_notification_templates_with_users() -> list[NotificationTemplate]:
+    async with get_db() as session:
+        logger.debug("Fetching notification templates with users")
+        result = await session.execute(
+            select(NotificationTemplate)
+            .options(selectinload(NotificationTemplate.user))
+            .join(NotificationTemplate.user)
+            .where(User.timezone.is_not(None))
+        )
+        templates = list(result.scalars().all())
+        logger.info("Fetched {} notification templates with users", len(templates))
+        return templates
+
+
 async def get_notification_templates_by_user(
     user_id: str,
     limit: int = 100,
@@ -299,6 +313,87 @@ async def get_pending_notifications() -> list[Notification]:
         notifications = list(result.scalars().all())
         logger.info("Fetched {} pending notifications", len(notifications))
         return notifications
+
+
+async def get_pending_notifications_by_template_ids(
+    template_ids: list[int],
+) -> list[Notification]:
+    if not template_ids:
+        return []
+
+    start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=1)
+
+    async with get_db() as session:
+        logger.debug(
+            "Fetching pending notifications for {} template_ids", len(template_ids)
+        )
+        result = await session.execute(
+            select(Notification).where(
+                and_(
+                    Notification.template_id.in_(template_ids),
+                    Notification.marked_as_done.is_(False),
+                    Notification.created_at >= start,
+                    Notification.created_at < end,
+                )
+            )
+        )
+        notifications = list(result.scalars().all())
+        logger.info(
+            "Fetched {} pending notifications for due templates", len(notifications)
+        )
+        return notifications
+
+
+async def ensure_notifications_exist_for_templates(
+    template_ids: list[int],
+) -> list[Notification]:
+    if not template_ids:
+        return []
+
+    start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + timedelta(days=1)
+
+    async with get_db() as session:
+        existing_result = await session.execute(
+            select(Notification).where(
+                and_(
+                    Notification.template_id.in_(template_ids),
+                    Notification.created_at >= start,
+                    Notification.created_at < end,
+                )
+            )
+        )
+        existing_notifications = list(existing_result.scalars().all())
+        existing_template_ids = {
+            notification.template_id for notification in existing_notifications
+        }
+
+        missing_template_ids = [
+            template_id
+            for template_id in template_ids
+            if template_id not in existing_template_ids
+        ]
+
+        if missing_template_ids:
+            logger.info(
+                "Creating {} missing daily notifications", len(missing_template_ids)
+            )
+            created_notifications = [
+                Notification(template_id=template_id, marked_as_done=False)
+                for template_id in missing_template_ids
+            ]
+            session.add_all(created_notifications)
+            await session.commit()
+
+            for notification in created_notifications:
+                await session.refresh(notification)
+
+            existing_notifications.extend(created_notifications)
+        else:
+            logger.debug("Daily notifications already exist for all due templates")
+
+        return existing_notifications
 
 
 async def update_notification(

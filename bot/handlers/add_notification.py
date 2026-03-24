@@ -26,8 +26,6 @@ from bot.postgres.crud import (
     get_notification_templates_by_user,
     update_user,
 )
-from bot.scheduler.schedule_notifications_cron_script import _schedule_notifications
-
 router = Router()
 logger = get_logger()
 
@@ -377,8 +375,6 @@ async def handle_save_notification(
             notification_template.notification_template_id,
             user.user_id,
         )
-
-        await _schedule_notifications([notification_template])
 
         await callback_query.message.answer(
             text=(
