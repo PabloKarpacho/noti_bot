@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew the Alice IP certificate for noti_bot
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /root/noti_bot/scripts/renew_alice_cert.sh

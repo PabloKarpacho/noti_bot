@@ -46,4 +46,6 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
+            set -e
             /usr/local/bin/deploy-noti-bot.sh
+            /bin/bash /root/noti_bot/scripts/configure_alice_https.sh

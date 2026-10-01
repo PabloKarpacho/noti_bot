@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     )
 
     bot_client_token: str = Field(default="", description="Telegram bot client token")
+    alice_webhook_secret: str = Field(
+        default="", description="Secret URL segment for the Alice webhook"
+    )
     log_level: str = Field(default="INFO", description="Application log level")
     # Redis Configuration
     redis_host: str = Field(default="localhost", description="Redis host address")
