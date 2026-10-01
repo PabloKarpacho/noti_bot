@@ -9,6 +9,7 @@ from aiohttp import web
 
 logger = logging.getLogger(__name__)
 CHAT_ID_PATTERN = re.compile(r"-?\d{1,20}")
+THREAD_ID_PATTERN = re.compile(r"[1-9]\d{0,9}")
 
 
 def alice_reply(text: str, *, end_session: bool = False) -> dict:
@@ -42,6 +43,9 @@ def create_alice_app(bot: Bot, secret: str) -> web.Application:
         raw_chat_id = request.match_info["chat_id"]
         if not CHAT_ID_PATTERN.fullmatch(raw_chat_id):
             raise web.HTTPBadRequest(text="Invalid chat ID")
+        raw_thread_id = request.match_info.get("thread_id")
+        if raw_thread_id is not None and not THREAD_ID_PATTERN.fullmatch(raw_thread_id):
+            raise web.HTTPBadRequest(text="Invalid thread ID")
         try:
             payload = await request.json()
         except (ValueError, TypeError) as exc:
@@ -75,7 +79,10 @@ def create_alice_app(bot: Bot, secret: str) -> web.Application:
                 alice_reply("Слишком длинная запись. Скажите короче.")
             )
         try:
-            await bot.send_message(chat_id=int(raw_chat_id), text=message)
+            send_kwargs = {"chat_id": int(raw_chat_id), "text": message}
+            if raw_thread_id is not None:
+                send_kwargs = {**send_kwargs, "message_thread_id": int(raw_thread_id)}
+            await bot.send_message(**send_kwargs)
         except Exception:
             logger.exception(
                 "Could not deliver Alice message to Telegram chat %s", raw_chat_id
@@ -87,4 +94,5 @@ def create_alice_app(bot: Bot, secret: str) -> web.Application:
 
     app = web.Application(client_max_size=16 * 1024)
     app.router.add_post("/alice/{secret}/{chat_id}", handle)
+    app.router.add_post("/alice/{secret}/{chat_id}/{thread_id}", handle)
     return app

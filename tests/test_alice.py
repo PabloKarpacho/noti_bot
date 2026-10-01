@@ -86,6 +86,37 @@ class AliceWebhookTests(unittest.IsolatedAsyncioTestCase):
             chat_id=-123, text="Купить молоко"
         )
 
+    async def test_sends_to_forum_topic(self) -> None:
+        """A thread ID in the URL routes the note into that forum topic."""
+        response = await self.client.post(
+            f"/alice/{self.secret}/-1003865230303/1075",
+            json={
+                "version": "1.0",
+                "session": {"new": False},
+                "request": {
+                    "type": "SimpleUtterance",
+                    "original_utterance": "В нужную тему",
+                },
+            },
+        )
+        self.assertEqual(response.status, 200)
+        self.bot.send_message.assert_awaited_once_with(
+            chat_id=-1003865230303, message_thread_id=1075, text="В нужную тему"
+        )
+
+    async def test_invalid_forum_topic_is_rejected(self) -> None:
+        """A malformed thread ID must never trigger a Telegram call."""
+        response = await self.client.post(
+            f"/alice/{self.secret}/-1003865230303/wrong",
+            json={
+                "version": "1.0",
+                "session": {"new": False},
+                "request": {"original_utterance": "Не отправлять"},
+            },
+        )
+        self.assertEqual(response.status, 400)
+        self.bot.send_message.assert_not_awaited()
+
     async def test_wrong_secret_rejected(self) -> None:
         """An unknown URL secret cannot send messages."""
         response = await self.client.post("/alice/wrong/-123", json={})

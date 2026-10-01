@@ -34,8 +34,8 @@ CI/CD integration:
 
 ## Alice voice notes
 
-The private Yandex Dialogs skill uses `https://216.57.104.246/alice/<secret>/<chat_id>` as its Webhook URL. The first empty request prompts for a note; later `SimpleUtterance.original_utterance` values are sent to the Telegram chat. A phrase supplied when launching the skill is sent immediately. The `ping` health check is never forwarded.
+The private Yandex Dialogs skill uses `https://216.57.104.246/alice/<secret>/<chat_id>/<thread_id>` as its Webhook URL for a forum topic, or omits `<thread_id>` to send to the general chat. The first empty request prompts for a note; later `SimpleUtterance.original_utterance` values are sent to the Telegram chat. A phrase supplied when launching the skill is sent immediately. The `ping` health check is never forwarded.
 
-`ALICE_WEBHOOK_SECRET` is generated in the server's untracked `.env` on first deployment. Read it over SSH and keep the full URL private. For a `t.me/c/3865230303/...` link, the Telegram chat ID is `-1003865230303`. The message number in that link is not a topic ID.
+`ALICE_WEBHOOK_SECRET` is generated in the server's untracked `.env` on first deployment. Read it over SSH and keep the full URL private. For the forum topic `t.me/c/3865230303/1075`, use chat ID `-1003865230303` and thread ID `1075`.
 
 The deploy workflow runs `scripts/configure_alice_https.sh` after updating the bot. It starts Nginx with a Let's Encrypt IP certificate and installs a systemd timer that checks renewal twice daily. Check it with `systemctl status noti-bot-alice-cert.timer`; run `systemctl start noti-bot-alice-cert.service` to check renewal manually. IP certificates last about six days and must be renewed automatically.
